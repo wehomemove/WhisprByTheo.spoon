@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: #1a1a1a;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+    overflow: hidden;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 32px;
+    background: rgba(30, 30, 30, 0.85);
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5),
+                0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+    transform: scale(1);
+    opacity: 1;
+}
+
+.bars-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    height: 40px;
+}
+
+.bar {
+    width: 4px;
+    height: 8px;
+    background: linear-gradient(180deg, #ff6b6b, #ff8e53);
+    border-radius: 2px;
+    animation: none;
+}
+
+/* Recording state - red/orange pulsing bars */
+.recording .bar {
+    background: linear-gradient(180deg, #ff6b6b, #ff8e53);
+}
+
+.recording .bar:nth-child(1) { animation: pulse 0.8s ease-in-out infinite; animation-delay: 0.0s; }
+.recording .bar:nth-child(2) { animation: pulse 0.8s ease-in-out infinite; animation-delay: 0.1s; }
+.recording .bar:nth-child(3) { animation: pulse 0.8s ease-in-out infinite; animation-delay: 0.2s; }
+.recording .bar:nth-child(4) { animation: pulse 0.8s ease-in-out infinite; animation-delay: 0.3s; }
+.recording .bar:nth-child(5) { animation: pulse 0.8s ease-in-out infinite; animation-delay: 0.4s; }
+.recording .bar:nth-child(6) { animation: pulse 0.8s ease-in-out infinite; animation-delay: 0.3s; }
+.recording .bar:nth-child(7) { animation: pulse 0.8s ease-in-out infinite; animation-delay: 0.2s; }
+.recording .bar:nth-child(8) { animation: pulse 0.8s ease-in-out infinite; animation-delay: 0.1s; }
+.recording .bar:nth-child(9) { animation: pulse 0.8s ease-in-out infinite; animation-delay: 0.0s; }
+
+@keyframes pulse {
+    0%, 100% { height: 8px; opacity: 0.5; }
+    50% { height: 32px; opacity: 1; }
+}
+
+/* Transcribing state - blue/purple flowing wave */
+.transcribing .bar {
+    background: linear-gradient(180deg, #667eea, #764ba2);
+    height: 16px;
+}
+
+.transcribing .bar:nth-child(1) { animation: wave 1.2s ease-in-out infinite; animation-delay: 0.0s; }
+.transcribing .bar:nth-child(2) { animation: wave 1.2s ease-in-out infinite; animation-delay: 0.1s; }
+.transcribing .bar:nth-child(3) { animation: wave 1.2s ease-in-out infinite; animation-delay: 0.2s; }
+.transcribing .bar:nth-child(4) { animation: wave 1.2s ease-in-out infinite; animation-delay: 0.3s; }
+.transcribing .bar:nth-child(5) { animation: wave 1.2s ease-in-out infinite; animation-delay: 0.4s; }
+.transcribing .bar:nth-child(6) { animation: wave 1.2s ease-in-out infinite; animation-delay: 0.5s; }
+.transcribing .bar:nth-child(7) { animation: wave 1.2s ease-in-out infinite; animation-delay: 0.6s; }
+.transcribing .bar:nth-child(8) { animation: wave 1.2s ease-in-out infinite; animation-delay: 0.7s; }
+.transcribing .bar:nth-child(9) { animation: wave 1.2s ease-in-out infinite; animation-delay: 0.8s; }
+
+@keyframes wave {
+    0%, 100% {
+        height: 8px;
+        opacity: 0.4;
+        transform: translateY(0);
+    }
+    50% {
+        height: 28px;
+        opacity: 1;
+        transform: translateY(-4px);
+    }
+}
+
+/* Success state - green check */
+.success .bars-container {
+    display: none;
+}
+
+.success .check {
+    display: flex;
+}
+
+.check {
+    display: none;
+    width: 40px;
+    height: 40px;
+    align-items: center;
+    justify-content: center;
+}
+
+.check svg {
+    width: 32px;
+    height: 32px;
+    stroke: #4ade80;
+    stroke-width: 3;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.check svg path {
+    stroke-dasharray: 50;
+    stroke-dashoffset: 50;
+    animation: drawCheck 0.4s ease-out forwards;
+}
+
+@keyframes drawCheck {
+    to { stroke-dashoffset: 0; }
+}
+
+.label {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+
+.recording .label { color: #ff8e53; }
+.transcribing .label { color: #a78bfa; }
+.success .label { color: #4ade80; }
+</style>
+</head>
+<body>
+<div class="container recording" id="container">
+    <div class="bars-container">
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+    </div>
+    <div class="check">
+        <svg viewBox="0 0 24 24">
+            <path d="M4 12l6 6L20 6"/>
+        </svg>
+    </div>
+    <div class="label" id="label">Listening</div>
+</div>
+
+<script>
+const states = [
+    { state: 'recording', label: 'Listening', duration: 3000 },
+    { state: 'transcribing', label: 'Transcribing', duration: 2500 },
+    { state: 'success', label: 'Done', duration: 1500 }
+];
+
+let currentIndex = 0;
+
+function cycleState() {
+    const container = document.getElementById('container');
+    const label = document.getElementById('label');
+    const current = states[currentIndex];
+
+    container.className = 'container ' + current.state;
+    label.textContent = current.label;
+
+    // Reset check animation for success state
+    if (current.state === 'success') {
+        const path = document.querySelector('.check svg path');
+        path.style.animation = 'none';
+        path.offsetHeight; // Trigger reflow
+        path.style.animation = 'drawCheck 0.4s ease-out forwards';
+    }
+
+    currentIndex = (currentIndex + 1) % states.length;
+    setTimeout(cycleState, current.duration);
+}
+
+// Start cycling
+cycleState();
+</script>
+</body>
+</html>
