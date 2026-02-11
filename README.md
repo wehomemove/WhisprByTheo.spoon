@@ -1,179 +1,254 @@
-# VoiceToText.spoon 🎙️
+# WhisprByTheo 🎙️
 
-Beautiful push-to-talk voice transcription for macOS. Hold a key to record, release to transcribe and paste.
+**Push-to-talk voice transcription for macOS.** Hold a key to record, release to transcribe and paste. Works everywhere - Slack, email, documents, anywhere you can type.
 
-![Demo](demo.gif)
+<p align="center">
+  <img src="https://img.shields.io/badge/No_API_Keys-100%25_Local-brightgreen?style=for-the-badge" alt="No API Keys">
+  <img src="https://img.shields.io/badge/Apple_Silicon-M1%2FM2%2FM3%2FM4-blue?style=for-the-badge" alt="Apple Silicon">
+  <img src="https://img.shields.io/badge/100%25_Free-Open_Source-orange?style=for-the-badge" alt="Free">
+</p>
 
-## Features
+---
 
-- **Push-to-talk** - Hold any key to record, release to transcribe
-- **Fast on-device AI** - Powered by MLX Whisper, runs entirely on your Mac
-- **Beautiful UI** - Native-looking glassmorphic overlay with animated feedback
-- **Privacy first** - No audio leaves your computer
-- **Apple Silicon optimized** - Blazing fast on M1/M2/M3/M4 Macs
+## ✨ Why Whispr?
 
-## Requirements
+| | |
+|---|---|
+| 🔒 **No API keys needed** | Runs 100% on your Mac. No OpenAI account, no subscriptions, no cloud. |
+| 🚀 **Fast** | Transcribes in ~1 second using Apple Silicon's ML engine |
+| 🎨 **Beautiful** | Native macOS look with animated feedback while recording |
+| 🔐 **Private** | Audio never leaves your computer |
+| 💰 **Free forever** | Open source, no limits, no usage caps |
 
-- **macOS** on Apple Silicon (M1/M2/M3/M4)
-- **[Hammerspoon](https://www.hammerspoon.org/)** - macOS automation tool
-- **Microphone** - Built-in or external
+---
 
-## Quick Install
+## 🖥️ What You'll Get
 
-### 1. Install Hammerspoon
+Hold your chosen key → speak → release → text appears:
 
+```
+┌─────────────────────────────────┐
+│  ████████████████████████████   │  ← Recording animation (red bars)
+│         Listening               │
+└─────────────────────────────────┘
+                ↓
+┌─────────────────────────────────┐
+│  ░░░░████░░░░████░░░░████░░░░   │  ← Transcribing animation (blue wave)
+│       Transcribing              │
+└─────────────────────────────────┘
+                ↓
+        Text pasted at cursor! ✓
+```
+
+---
+
+## 📋 Requirements
+
+- **Mac with Apple Silicon** (M1, M2, M3, or M4 chip)
+- **macOS Ventura or later** (13.0+)
+- **Microphone** (built-in works fine)
+
+> ⚠️ **Intel Macs not supported** - MLX only runs on Apple Silicon
+
+---
+
+## 🚀 Installation (5 minutes)
+
+### Step 1: Install Hammerspoon
+
+Hammerspoon is a free macOS automation tool. It runs in your menu bar and lets you create keyboard shortcuts and automations.
+
+**Option A - Using Homebrew (recommended):**
 ```bash
 brew install --cask hammerspoon
 ```
 
-Open Hammerspoon and grant Accessibility permissions when prompted.
+**Option B - Manual download:**
+1. Go to [hammerspoon.org](https://www.hammerspoon.org/)
+2. Click "Download"
+3. Drag to Applications
+4. Open Hammerspoon
 
-### 2. Download the Spoon
+**First launch:** Click "Open System Settings" when prompted and enable Hammerspoon under **Privacy & Security → Accessibility**.
 
+---
+
+### Step 2: Download WhisprByTheo
+
+**Option A - One command:**
 ```bash
-# Clone directly into Hammerspoon Spoons directory
-git clone https://github.com/wehomemove/VoiceToText.spoon.git ~/.hammerspoon/Spoons/VoiceToText.spoon
+git clone https://github.com/wehomemove/WhisprByTheo.spoon.git ~/.hammerspoon/Spoons/WhisprByTheo.spoon
 ```
 
-Or download the latest release and unzip to `~/.hammerspoon/Spoons/`
+**Option B - Manual download:**
+1. [Download ZIP](https://github.com/wehomemove/WhisprByTheo.spoon/archive/refs/heads/main.zip)
+2. Unzip it
+3. Rename folder to `WhisprByTheo.spoon`
+4. Move to `~/.hammerspoon/Spoons/` (press Cmd+Shift+G in Finder and paste the path)
 
-### 3. Install Dependencies
+---
+
+### Step 3: Install AI Engine
+
+This installs the speech recognition (runs locally, no cloud):
 
 ```bash
-~/.hammerspoon/Spoons/VoiceToText.spoon/install-deps.sh
+~/.hammerspoon/Spoons/WhisprByTheo.spoon/install-deps.sh
 ```
 
-This installs:
-- `ffmpeg` - Audio recording
-- `mlx-whisper` - AI transcription
+<details>
+<summary>What does this install?</summary>
 
-### 4. Configure Hammerspoon
+- **ffmpeg** - Records audio from your microphone
+- **mlx-whisper** - OpenAI's Whisper AI, optimized for Apple Silicon by Apple
 
-Add to your `~/.hammerspoon/init.lua`:
+Both are open source. Total install size: ~500MB.
+</details>
+
+---
+
+### Step 4: Configure Hammerspoon
+
+Open (or create) the file `~/.hammerspoon/init.lua` and add:
 
 ```lua
-hs.loadSpoon("VoiceToText")
-spoon.VoiceToText:start()
+hs.loadSpoon("WhisprByTheo")
+spoon.WhisprByTheo:start()
 ```
 
-### 5. Reload & Setup
+**Not sure how to edit this file?** Run this in Terminal:
+```bash
+echo 'hs.loadSpoon("WhisprByTheo")
+spoon.WhisprByTheo:start()' >> ~/.hammerspoon/init.lua
+```
 
-Reload Hammerspoon config (click menubar icon → Reload Config).
+---
 
-**You'll be prompted to press the key you want to use.** Press any key - it will be saved and used for push-to-talk.
+### Step 5: Choose Your Key
 
-## Usage
+1. Click the Hammerspoon icon (🔨) in your menu bar
+2. Click **Reload Config**
+3. You'll see: *"Press the key you want to use for voice input..."*
+4. **Press any key** - this becomes your push-to-talk key
 
-1. **Hold** your configured key
-2. **Speak** while the UI shows "Listening"
+**Good choices:**
+- A key you don't use (like `Caps Lock`, `Right Option`, or a function key)
+- A numpad key if you have one
+
+---
+
+## 🎤 How to Use
+
+1. **Hold** your chosen key
+2. **Speak** (you'll see the red "Listening" animation)
 3. **Release** the key
-4. Watch it transcribe (blue "Transcribing" animation)
-5. Text is automatically pasted at your cursor
+4. Wait ~1 second for transcription
+5. ✨ Text appears at your cursor
 
-## Configuration
+Works in any app - Slack, Gmail, VS Code, Notes, anywhere!
 
-### Change Whisper Model
+---
 
-Larger models are more accurate but slower:
-
-```lua
-hs.loadSpoon("VoiceToText")
-spoon.VoiceToText:setModel("mlx-community/whisper-base")  -- Options: tiny, base, small, medium
-spoon.VoiceToText:start()
-```
-
-| Model | Speed | Accuracy | VRAM |
-|-------|-------|----------|------|
-| `whisper-tiny` | Fastest | Good | ~1GB |
-| `whisper-base` | Fast | Better | ~1GB |
-| `whisper-small` | Medium | Great | ~2GB |
-| `whisper-medium` | Slower | Excellent | ~5GB |
+## ⚙️ Settings (Optional)
 
 ### Change Language
 
-```lua
-spoon.VoiceToText:setLanguage("es")  -- Spanish
-spoon.VoiceToText:start()
-```
-
-Supported: en, es, fr, de, it, pt, nl, pl, ru, zh, ja, ko, and [many more](https://github.com/openai/whisper#available-models-and-languages).
-
-### Manual Key Binding
-
-If you know the keycode:
+Default is English. To change, edit your `~/.hammerspoon/init.lua`:
 
 ```lua
-spoon.VoiceToText:bindKey(76)  -- Numpad Enter
-spoon.VoiceToText:start()
+hs.loadSpoon("WhisprByTheo")
+spoon.WhisprByTheo:setLanguage("es")  -- Spanish
+spoon.WhisprByTheo:start()
 ```
 
-### Re-run Setup
+**Supported languages:** en, es, fr, de, it, pt, nl, ru, zh, ja, ko, ar, hi, and [90+ more](https://github.com/openai/whisper#available-models-and-languages)
 
-To change your key binding:
+### Better Accuracy (Slower)
+
+Default uses the tiny model (fast). For better accuracy:
 
 ```lua
-spoon.VoiceToText:setup()
+spoon.WhisprByTheo:setModel("mlx-community/whisper-base")  -- or whisper-small
 ```
 
-## API Reference
+| Model | Speed | Accuracy | Best for |
+|-------|-------|----------|----------|
+| `whisper-tiny` | ⚡ ~1s | Good | Quick notes, casual use |
+| `whisper-base` | ~2s | Better | General use |
+| `whisper-small` | ~4s | Great | Important transcription |
+| `whisper-medium` | ~10s | Excellent | Maximum accuracy |
 
-| Method | Description |
-|--------|-------------|
-| `:start()` | Load config and start (runs setup if no config) |
-| `:stop()` | Stop and clean up |
-| `:setup()` | Interactive key binding setup |
-| `:bindKey(keyCode)` | Bind specific keycode |
-| `:setModel(model)` | Set Whisper model |
-| `:setLanguage(lang)` | Set transcription language |
+### Change Key Binding
 
-## Troubleshooting
+To pick a different key:
+```lua
+spoon.WhisprByTheo:setup()  -- Will prompt you to press a new key
+```
 
-### "mlx_whisper not found"
+---
 
-Run the install script:
+## ❓ Troubleshooting
+
+<details>
+<summary><b>"mlx_whisper not found"</b></summary>
+
+Run the install script again:
 ```bash
-~/.hammerspoon/Spoons/VoiceToText.spoon/install-deps.sh
+~/.hammerspoon/Spoons/WhisprByTheo.spoon/install-deps.sh
 ```
+</details>
 
-### No audio / wrong microphone
+<details>
+<summary><b>No audio / wrong microphone</b></summary>
 
-List available devices:
-```bash
-ffmpeg -f avfoundation -list_devices true -i "" 2>&1 | grep -A 20 "audio devices"
-```
-
-Set the correct device in your config:
+1. Check your mic is set as default in System Settings → Sound → Input
+2. Or specify it manually:
 ```lua
-spoon.VoiceToText.audioDevice = ":1"  -- Change number to match your mic
-spoon.VoiceToText:start()
+spoon.WhisprByTheo.audioDevice = ":1"  -- Try :0, :1, :2 etc
+spoon.WhisprByTheo:start()
 ```
+</details>
 
-### Key binding not working
+<details>
+<summary><b>Key binding not working</b></summary>
 
-Make sure Hammerspoon has Accessibility permissions:
-System Settings → Privacy & Security → Accessibility → Hammerspoon ✓
+Hammerspoon needs Accessibility permission:
+1. Open System Settings → Privacy & Security → Accessibility
+2. Find Hammerspoon and enable it (or remove and re-add it)
+3. Reload Hammerspoon config
+</details>
 
-### Transcription is slow
+<details>
+<summary><b>First transcription is slow</b></summary>
 
-Use a smaller model:
-```lua
-spoon.VoiceToText:setModel("mlx-community/whisper-tiny")
-```
+The first time you use it, the AI model downloads (~50-150MB). After that, it's instant.
+</details>
 
-## How It Works
+---
 
-1. **Recording**: ffmpeg captures audio from your microphone
-2. **Transcription**: MLX Whisper processes audio entirely on-device using Apple's ML framework
-3. **Output**: Text is copied to clipboard and pasted at cursor position
+## 🔒 Privacy
 
-All processing happens locally. No data is sent anywhere.
+**Whispr is 100% local.** Your audio is:
+- ✅ Recorded to a temp file on your Mac
+- ✅ Processed by AI running on your Mac
+- ✅ Deleted immediately after transcription
+- ❌ Never sent to any server
+- ❌ Never stored permanently
 
-## Credits
+No accounts, no API keys, no tracking, no cloud.
 
-- [MLX Whisper](https://github.com/ml-explore/mlx-examples/tree/main/whisper) - Apple's MLX port of OpenAI Whisper
-- [Hammerspoon](https://www.hammerspoon.org/) - Powerful macOS automation
-- Built with ❤️ by [Homemove](https://homemove.com)
+---
 
-## License
+## 🙏 Credits
 
-MIT License - see [LICENSE](LICENSE)
+- [MLX Whisper](https://github.com/ml-explore/mlx-examples/tree/main/whisper) - Apple's optimized port of OpenAI Whisper
+- [Hammerspoon](https://www.hammerspoon.org/) - macOS automation
+- [OpenAI Whisper](https://github.com/openai/whisper) - The underlying AI model
+
+Built by Theo @ [Homemove](https://homemove.com)
+
+---
+
+## 📄 License
+
+MIT - Use it however you want, free forever.

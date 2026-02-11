@@ -1,18 +1,18 @@
 #!/bin/bash
 #
-# VoiceToText dependency installer
+# WhisprByTheo dependency installer
 # Installs mlx-whisper and ffmpeg for Apple Silicon Macs
 #
 
 set -e
 
-echo "🎙️  VoiceToText Dependency Installer"
-echo "===================================="
+echo "🎙️  WhisprByTheo Dependency Installer"
+echo "====================================="
 echo ""
 
 # Check for Apple Silicon
 if [[ $(uname -m) != "arm64" ]]; then
-    echo "❌ Error: VoiceToText requires Apple Silicon (M1/M2/M3/M4)"
+    echo "❌ Error: Whispr requires Apple Silicon (M1/M2/M3/M4)"
     echo "   MLX Whisper only runs on Apple Silicon Macs."
     exit 1
 fi
@@ -60,8 +60,8 @@ if command -v ffmpeg &> /dev/null && command -v mlx_whisper &> /dev/null; then
     echo "Next steps:"
     echo "1. Add this to your ~/.hammerspoon/init.lua:"
     echo ""
-    echo '   hs.loadSpoon("VoiceToText")'
-    echo '   spoon.VoiceToText:start()'
+    echo '   hs.loadSpoon("WhisprByTheo")'
+    echo '   spoon.WhisprByTheo:start()'
     echo ""
     echo "2. Reload Hammerspoon config"
     echo "3. Press the key you want to use when prompted"

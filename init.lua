@@ -1,4 +1,4 @@
---- === VoiceToText ===
+--- === WhisprByTheo ===
 ---
 --- Push-to-talk voice transcription for macOS using Whisper AI.
 --- Hold a key to record, release to transcribe and paste.
@@ -6,16 +6,16 @@
 --- Features a beautiful native-looking UI with animated feedback.
 --- Powered by MLX Whisper for fast on-device transcription on Apple Silicon.
 ---
---- Download: https://github.com/wehomemove/VoiceToText.spoon
+--- Download: https://github.com/wehomemove/WhisprByTheo.spoon
 
 local obj = {}
 obj.__index = obj
 
 -- Metadata
-obj.name = "VoiceToText"
+obj.name = "WhisprByTheo"
 obj.version = "1.0.0"
-obj.author = "Homemove <hello@homemove.com>"
-obj.homepage = "https://github.com/wehomemove/VoiceToText.spoon"
+obj.author = "Theo @ Homemove"
+obj.homepage = "https://github.com/wehomemove/WhisprByTheo.spoon"
 obj.license = "MIT - https://opensource.org/licenses/MIT"
 
 -- Configuration with defaults
@@ -28,13 +28,13 @@ obj.keyCode = nil  -- Set during setup or manually
 -- Internal state
 local recording = false
 local recordingTask = nil
-local audioFile = "/tmp/voicetotext_audio.wav"
+local audioFile = "/tmp/whispr_audio.wav"
 local voiceUI = nil
 local keyDownTap = nil
 local keyUpTap = nil
 local spoonPath = nil
 
---- VoiceToText:init()
+--- WhisprByTheo:init()
 --- Method
 --- Initialize the spoon
 function obj:init()
@@ -133,7 +133,7 @@ local function stopRecordingAndTranscribe()
         hs.task.new(obj.whisperPath,
             function(exitCode)
                 if exitCode == 0 then
-                    local f = io.open("/tmp/voicetotext_out/voicetotext_audio.txt", "r")
+                    local f = io.open("/tmp/whispr_out/whispr_audio.txt", "r")
                     if f then
                         local text = f:read("*all"):gsub("^%s+", ""):gsub("%s+$", ""):gsub("\n", " ")
                         f:close()
@@ -156,14 +156,14 @@ local function stopRecordingAndTranscribe()
                     hs.timer.doAfter(1.5, function() hideUI(false) end)
                 end
                 os.remove(audioFile)
-                os.execute("rm -rf /tmp/voicetotext_out")
+                os.execute("rm -rf /tmp/whispr_out")
             end,
-            {audioFile, "--model", obj.whisperModel, "--output-dir", "/tmp/voicetotext_out", "--language", obj.language}
+            {audioFile, "--model", obj.whisperModel, "--output-dir", "/tmp/whispr_out", "--language", obj.language}
         ):start()
     end)
 end
 
---- VoiceToText:bindKey(keyCode)
+--- WhisprByTheo:bindKey(keyCode)
 --- Method
 --- Bind the push-to-talk key by keycode
 ---
@@ -171,7 +171,7 @@ end
 ---  * keyCode - The keycode to use (number)
 ---
 --- Returns:
----  * The VoiceToText object
+---  * The WhisprByTheo object
 function obj:bindKey(keyCode)
     self.keyCode = keyCode
 
@@ -200,12 +200,12 @@ function obj:bindKey(keyCode)
     return self
 end
 
---- VoiceToText:setup()
+--- WhisprByTheo:setup()
 --- Method
 --- Interactive setup - detects the key you press and binds it
 ---
 --- Returns:
----  * The VoiceToText object
+---  * The WhisprByTheo object
 function obj:setup()
     hs.alert.show("🎙️ Press the key you want to use for voice input...", 10)
 
@@ -215,7 +215,7 @@ function obj:setup()
         setupTap:stop()
 
         -- Save to config file
-        local configPath = os.getenv("HOME") .. "/.config/voicetotext"
+        local configPath = os.getenv("HOME") .. "/.config/whispr"
         os.execute("mkdir -p " .. configPath)
         local f = io.open(configPath .. "/config.lua", "w")
         if f then
@@ -234,12 +234,12 @@ function obj:setup()
     return self
 end
 
---- VoiceToText:start()
+--- WhisprByTheo:start()
 --- Method
---- Start VoiceToText with saved config or run setup if no config exists
+--- Start WhisprByTheo with saved config or run setup if no config exists
 ---
 --- Returns:
----  * The VoiceToText object
+---  * The WhisprByTheo object
 function obj:start()
     -- Check dependencies
     local whisperCheck = io.popen("which mlx_whisper 2>/dev/null || echo ''"):read("*a"):gsub("%s+", "")
@@ -255,7 +255,7 @@ function obj:start()
     end
 
     -- Try to load saved config
-    local configPath = os.getenv("HOME") .. "/.config/voicetotext/config.lua"
+    local configPath = os.getenv("HOME") .. "/.config/whispr/config.lua"
     local f = io.open(configPath, "r")
     if f then
         f:close()
@@ -272,12 +272,12 @@ function obj:start()
     return self
 end
 
---- VoiceToText:stop()
+--- WhisprByTheo:stop()
 --- Method
---- Stop VoiceToText and clean up
+--- Stop WhisprByTheo and clean up
 ---
 --- Returns:
----  * The VoiceToText object
+---  * The WhisprByTheo object
 function obj:stop()
     if keyDownTap then keyDownTap:stop(); keyDownTap = nil end
     if keyUpTap then keyUpTap:stop(); keyUpTap = nil end
@@ -285,7 +285,7 @@ function obj:stop()
     return self
 end
 
---- VoiceToText:setModel(model)
+--- WhisprByTheo:setModel(model)
 --- Method
 --- Set the Whisper model to use
 ---
@@ -293,13 +293,13 @@ end
 ---  * model - Model name (e.g., "mlx-community/whisper-tiny", "mlx-community/whisper-base", "mlx-community/whisper-small")
 ---
 --- Returns:
----  * The VoiceToText object
+---  * The WhisprByTheo object
 function obj:setModel(model)
     self.whisperModel = model
     return self
 end
 
---- VoiceToText:setLanguage(lang)
+--- WhisprByTheo:setLanguage(lang)
 --- Method
 --- Set the language for transcription
 ---
@@ -307,7 +307,7 @@ end
 ---  * lang - Language code (e.g., "en", "es", "fr", "de")
 ---
 --- Returns:
----  * The VoiceToText object
+---  * The WhisprByTheo object
 function obj:setLanguage(lang)
     self.language = lang
     return self
