@@ -1,0 +1,10 @@
+{
+  "name": "VoiceToText",
+  "version": "1.0.0",
+  "description": "Push-to-talk voice transcription using MLX Whisper. Hold a key to record, release to transcribe and paste. Features a beautiful native-looking UI with animated feedback.",
+  "author": "Homemove <hello@homemove.com>",
+  "homepage": "https://github.com/wehomemove/VoiceToText.spoon",
+  "license": "MIT",
+  "download_url": "https://github.com/wehomemove/VoiceToText.spoon/releases/latest/download/VoiceToText.spoon.zip",
+  "min_hammerspoon_version": "0.9.90"
+}
