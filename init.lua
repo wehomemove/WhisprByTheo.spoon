@@ -23,6 +23,7 @@ obj.whisperPath = os.getenv("HOME") .. "/.local/bin/mlx_whisper"
 obj.ffmpegPath = "/opt/homebrew/bin/ffmpeg"
 obj.whisperModel = "mlx-community/whisper-tiny"
 obj.language = nil  -- nil = let Whisper auto-detect the language per utterance
+obj.conditionOnPreviousText = false  -- True invites repetition loops on pauses and language-lock on code-switching; keep False for dictation
 obj.audioDevice = ":0"  -- Default audio input (avfoundation index)
 obj.audioDevicePreference = nil  -- e.g. {"Jabra", "Insta360"}: first connected match wins (name substring, case-insensitive); overrides audioDevice
 obj.keyCode = nil  -- Set during setup or manually
@@ -186,7 +187,8 @@ local function stopRecordingAndTranscribe()
                 os.execute("rm -rf /tmp/whispr_out")
             end,
             (function()
-                local args = {audioFile, "--model", obj.whisperModel, "--output-dir", "/tmp/whispr_out"}
+                local args = {audioFile, "--model", obj.whisperModel, "--output-dir", "/tmp/whispr_out",
+                              "--condition-on-previous-text", obj.conditionOnPreviousText and "True" or "False"}
                 if obj.language and obj.language ~= "auto" then
                     table.insert(args, "--language")
                     table.insert(args, obj.language)
