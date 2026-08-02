@@ -26,10 +26,13 @@ obj.language = nil  -- nil = let Whisper auto-detect the language per utterance
 obj.conditionOnPreviousText = false  -- True invites repetition loops on pauses and language-lock on code-switching; keep False for dictation
 obj.audioDevice = ":0"  -- Default audio input (avfoundation index)
 obj.audioDevicePreference = nil  -- e.g. {"Jabra", "Insta360"}: first connected match wins (name substring, case-insensitive); overrides audioDevice
+obj.initialPrompt = nil  -- optional vocabulary bias, e.g. domain terms Whisper should favor; also biases language, so leave nil for bilingual use
+obj.restoreClipboard = true  -- put the previous clipboard contents back after pasting (plain text only)
 obj.keyCode = nil  -- Set during setup or manually
 
 -- Internal state
 local recording = false
+local micLive = false
 local recordingTask = nil
 local audioFile = "/tmp/whispr_audio.wav"
 local voiceUI = nil
@@ -137,10 +140,21 @@ local function startRecording()
     if recording then return end
     recording = true
 
-    showUI("recording", "Listening")
+    -- ffmpeg needs up to ~1s to open the capture device; words spoken before
+    -- that are lost. Show "Starting" until ffmpeg's progress stream confirms
+    -- samples are flowing, so the user knows when the mic is actually hot.
+    micLive = false
+    showUI("recording", "Starting")
 
-    recordingTask = hs.task.new(obj.ffmpegPath, nil, {
-        "-y", "-f", "avfoundation", "-i", obj._resolvedAudioDevice or obj.audioDevice, "-ar", "16000", "-ac", "1", audioFile
+    recordingTask = hs.task.new(obj.ffmpegPath, nil, function(_, stdOut, _)
+        if recording and not micLive and stdOut and #stdOut > 0 then
+            micLive = true
+            showUI("recording", "Listening")
+        end
+        return true
+    end, {
+        "-y", "-nostats", "-progress", "pipe:1",
+        "-f", "avfoundation", "-i", obj._resolvedAudioDevice or obj.audioDevice, "-ar", "16000", "-ac", "1", audioFile
     })
     recordingTask:start()
 end
@@ -166,10 +180,16 @@ local function stopRecordingAndTranscribe()
                         local text = f:read("*all"):gsub("^%s+", ""):gsub("%s+$", ""):gsub("\n", " ")
                         f:close()
                         if text ~= "" then
+                            local previousClipboard = obj.restoreClipboard and hs.pasteboard.getContents() or nil
                             hs.pasteboard.setContents(text)
                             hideUI(true)
                             hs.timer.doAfter(0.5, function()
                                 hs.eventtap.keyStroke({"cmd"}, "v")
+                                if previousClipboard then
+                                    hs.timer.doAfter(0.4, function()
+                                        hs.pasteboard.setContents(previousClipboard)
+                                    end)
+                                end
                             end)
                         else
                             showUI("error", "No speech")
@@ -192,6 +212,10 @@ local function stopRecordingAndTranscribe()
                 if obj.language and obj.language ~= "auto" then
                     table.insert(args, "--language")
                     table.insert(args, obj.language)
+                end
+                if obj.initialPrompt then
+                    table.insert(args, "--initial-prompt")
+                    table.insert(args, obj.initialPrompt)
                 end
                 return args
             end)()
