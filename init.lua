@@ -22,7 +22,7 @@ obj.license = "MIT - https://opensource.org/licenses/MIT"
 obj.whisperPath = os.getenv("HOME") .. "/.local/bin/mlx_whisper"
 obj.ffmpegPath = "/opt/homebrew/bin/ffmpeg"
 obj.whisperModel = "mlx-community/whisper-tiny"
-obj.language = "en"
+obj.language = nil  -- nil = let Whisper auto-detect the language per utterance
 obj.audioDevice = ":0"  -- Default audio input
 obj.keyCode = nil  -- Set during setup or manually
 
@@ -159,7 +159,14 @@ local function stopRecordingAndTranscribe()
                 os.remove(audioFile)
                 os.execute("rm -rf /tmp/whispr_out")
             end,
-            {audioFile, "--model", obj.whisperModel, "--output-dir", "/tmp/whispr_out", "--language", obj.language}
+            (function()
+                local args = {audioFile, "--model", obj.whisperModel, "--output-dir", "/tmp/whispr_out"}
+                if obj.language and obj.language ~= "auto" then
+                    table.insert(args, "--language")
+                    table.insert(args, obj.language)
+                end
+                return args
+            end)()
         ):start()
     end)
 end
@@ -242,12 +249,10 @@ end
 --- Returns:
 ---  * The WhisprByTheo object
 function obj:start()
-    -- Check dependencies at the paths actually invoked later. `which` via
-    -- io.popen runs with the GUI launchd PATH (/usr/bin:/bin:/usr/sbin:/sbin),
-    -- which lacks ~/.local/bin and /opt/homebrew/bin, so it reports "not found"
-    -- even on a correct install.
+    -- Check dependencies at the paths actually used later; `which` via io.popen
+    -- runs with the GUI launchd PATH, which lacks ~/.local/bin and /opt/homebrew/bin
     if not hs.fs.attributes(self.whisperPath) then
-        hs.alert.show("⚠️ mlx_whisper not found at " .. self.whisperPath .. ". Run install script first or set whisperPath.", 5)
+        hs.alert.show("⚠️ mlx_whisper not found at " .. self.whisperPath .. ". Run install script first.", 5)
         return self
     end
 
