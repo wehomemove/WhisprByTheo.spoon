@@ -20,6 +20,7 @@ obj.license = "MIT - https://opensource.org/licenses/MIT"
 
 -- Configuration with defaults
 obj.whisperPath = os.getenv("HOME") .. "/.local/bin/mlx_whisper"
+obj.ffmpegPath = "/opt/homebrew/bin/ffmpeg"
 obj.whisperModel = "mlx-community/whisper-tiny"
 obj.language = "en"
 obj.audioDevice = ":0"  -- Default audio input
@@ -111,7 +112,7 @@ local function startRecording()
 
     showUI("recording", "Listening")
 
-    recordingTask = hs.task.new("/opt/homebrew/bin/ffmpeg", nil, {
+    recordingTask = hs.task.new(obj.ffmpegPath, nil, {
         "-y", "-f", "avfoundation", "-i", obj.audioDevice, "-ar", "16000", "-ac", "1", audioFile
     })
     recordingTask:start()
@@ -241,16 +242,17 @@ end
 --- Returns:
 ---  * The WhisprByTheo object
 function obj:start()
-    -- Check dependencies
-    local whisperCheck = io.popen("which mlx_whisper 2>/dev/null || echo ''"):read("*a"):gsub("%s+", "")
-    if whisperCheck == "" then
-        hs.alert.show("⚠️ mlx_whisper not found. Run install script first.", 5)
+    -- Check dependencies at the paths actually invoked later. `which` via
+    -- io.popen runs with the GUI launchd PATH (/usr/bin:/bin:/usr/sbin:/sbin),
+    -- which lacks ~/.local/bin and /opt/homebrew/bin, so it reports "not found"
+    -- even on a correct install.
+    if not hs.fs.attributes(self.whisperPath) then
+        hs.alert.show("⚠️ mlx_whisper not found at " .. self.whisperPath .. ". Run install script first or set whisperPath.", 5)
         return self
     end
 
-    local ffmpegCheck = io.popen("which ffmpeg 2>/dev/null || echo ''"):read("*a"):gsub("%s+", "")
-    if ffmpegCheck == "" then
-        hs.alert.show("⚠️ ffmpeg not found. Run: brew install ffmpeg", 5)
+    if not hs.fs.attributes(self.ffmpegPath) then
+        hs.alert.show("⚠️ ffmpeg not found at " .. self.ffmpegPath .. ". Run: brew install ffmpeg, or set ffmpegPath.", 5)
         return self
     end
 
