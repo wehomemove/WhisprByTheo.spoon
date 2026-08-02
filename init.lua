@@ -23,7 +23,8 @@ obj.whisperPath = os.getenv("HOME") .. "/.local/bin/mlx_whisper"
 obj.ffmpegPath = "/opt/homebrew/bin/ffmpeg"
 obj.whisperModel = "mlx-community/whisper-tiny"
 obj.language = nil  -- nil = let Whisper auto-detect the language per utterance
-obj.audioDevice = ":0"  -- Default audio input
+obj.audioDevice = ":0"  -- Default audio input (avfoundation index)
+obj.audioDevicePreference = nil  -- e.g. {"Jabra", "Insta360"}: first connected match wins (name substring, case-insensitive); overrides audioDevice
 obj.keyCode = nil  -- Set during setup or manually
 
 -- Internal state
@@ -105,6 +106,31 @@ local function hideUI(success)
     end
 end
 
+-- Map audioDevicePreference names to the current avfoundation index.
+-- Indices shift as devices come and go, so resolve by name — at start()
+-- and again on every device add/remove, never on the recording hot path.
+local function resolveAudioDevice()
+    if not obj.audioDevicePreference then return end
+    obj._resolvedAudioDevice = nil
+    local p = io.popen(obj.ffmpegPath .. ' -list_devices true -f avfoundation -i "" 2>&1')
+    if not p then return end
+    local out = p:read("*a")
+    p:close()
+    local audioSection = out:match("audio devices:(.*)$") or ""
+    local devices = {}
+    for idx, name in audioSection:gmatch("%[(%d+)%]([^\r\n]+)") do
+        devices[#devices + 1] = { index = idx, name = name:match("^%s*(.-)%s*$") }
+    end
+    for _, want in ipairs(obj.audioDevicePreference) do
+        for _, d in ipairs(devices) do
+            if d.name:lower():find(want:lower(), 1, true) then
+                obj._resolvedAudioDevice = ":" .. d.index
+                return
+            end
+        end
+    end
+end
+
 -- Start recording audio
 local function startRecording()
     if recording then return end
@@ -113,7 +139,7 @@ local function startRecording()
     showUI("recording", "Listening")
 
     recordingTask = hs.task.new(obj.ffmpegPath, nil, {
-        "-y", "-f", "avfoundation", "-i", obj.audioDevice, "-ar", "16000", "-ac", "1", audioFile
+        "-y", "-f", "avfoundation", "-i", obj._resolvedAudioDevice or obj.audioDevice, "-ar", "16000", "-ac", "1", audioFile
     })
     recordingTask:start()
 end
@@ -261,6 +287,15 @@ function obj:start()
         return self
     end
 
+    -- Pick the recording device up front and track plug/unplug events
+    if self.audioDevicePreference then
+        resolveAudioDevice()
+        hs.audiodevice.watcher.setCallback(function(event)
+            if event == "dev#" then resolveAudioDevice() end
+        end)
+        hs.audiodevice.watcher.start()
+    end
+
     -- Try to load saved config
     local configPath = os.getenv("HOME") .. "/.config/whispr/config.lua"
     local f = io.open(configPath, "r")
@@ -286,6 +321,9 @@ end
 --- Returns:
 ---  * The WhisprByTheo object
 function obj:stop()
+    if self.audioDevicePreference and hs.audiodevice.watcher.isRunning() then
+        hs.audiodevice.watcher.stop()
+    end
     if keyDownTap then keyDownTap:stop(); keyDownTap = nil end
     if keyUpTap then keyUpTap:stop(); keyUpTap = nil end
     if voiceUI then voiceUI:delete(); voiceUI = nil end
