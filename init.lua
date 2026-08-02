@@ -20,13 +20,19 @@ obj.license = "MIT - https://opensource.org/licenses/MIT"
 
 -- Configuration with defaults
 obj.whisperPath = os.getenv("HOME") .. "/.local/bin/mlx_whisper"
+obj.ffmpegPath = "/opt/homebrew/bin/ffmpeg"
 obj.whisperModel = "mlx-community/whisper-tiny"
-obj.language = "en"
-obj.audioDevice = ":0"  -- Default audio input
+obj.language = nil  -- nil = let Whisper auto-detect the language per utterance
+obj.conditionOnPreviousText = false  -- True invites repetition loops on pauses and language-lock on code-switching; keep False for dictation
+obj.audioDevice = ":0"  -- Default audio input (avfoundation index)
+obj.audioDevicePreference = nil  -- e.g. {"Jabra", "Insta360"}: first connected match wins (name substring, case-insensitive); overrides audioDevice
+obj.initialPrompt = nil  -- optional vocabulary bias, e.g. domain terms Whisper should favor; also biases language, so leave nil for bilingual use
+obj.restoreClipboard = true  -- put the previous clipboard contents back after pasting (plain text only)
 obj.keyCode = nil  -- Set during setup or manually
 
 -- Internal state
 local recording = false
+local micLive = false
 local recordingTask = nil
 local audioFile = "/tmp/whispr_audio.wav"
 local voiceUI = nil
@@ -104,15 +110,51 @@ local function hideUI(success)
     end
 end
 
+-- Map audioDevicePreference names to the current avfoundation index.
+-- Indices shift as devices come and go, so resolve by name — at start()
+-- and again on every device add/remove, never on the recording hot path.
+local function resolveAudioDevice()
+    if not obj.audioDevicePreference then return end
+    obj._resolvedAudioDevice = nil
+    local p = io.popen(obj.ffmpegPath .. ' -list_devices true -f avfoundation -i "" 2>&1')
+    if not p then return end
+    local out = p:read("*a")
+    p:close()
+    local audioSection = out:match("audio devices:(.*)$") or ""
+    local devices = {}
+    for idx, name in audioSection:gmatch("%[(%d+)%]([^\r\n]+)") do
+        devices[#devices + 1] = { index = idx, name = name:match("^%s*(.-)%s*$") }
+    end
+    for _, want in ipairs(obj.audioDevicePreference) do
+        for _, d in ipairs(devices) do
+            if d.name:lower():find(want:lower(), 1, true) then
+                obj._resolvedAudioDevice = ":" .. d.index
+                return
+            end
+        end
+    end
+end
+
 -- Start recording audio
 local function startRecording()
     if recording then return end
     recording = true
 
-    showUI("recording", "Listening")
+    -- ffmpeg needs up to ~1s to open the capture device; words spoken before
+    -- that are lost. Show "Starting" until ffmpeg's progress stream confirms
+    -- samples are flowing, so the user knows when the mic is actually hot.
+    micLive = false
+    showUI("recording", "Starting")
 
-    recordingTask = hs.task.new("/opt/homebrew/bin/ffmpeg", nil, {
-        "-y", "-f", "avfoundation", "-i", obj.audioDevice, "-ar", "16000", "-ac", "1", audioFile
+    recordingTask = hs.task.new(obj.ffmpegPath, nil, function(_, stdOut, _)
+        if recording and not micLive and stdOut and #stdOut > 0 then
+            micLive = true
+            showUI("recording", "Listening")
+        end
+        return true
+    end, {
+        "-y", "-nostats", "-progress", "pipe:1",
+        "-f", "avfoundation", "-i", obj._resolvedAudioDevice or obj.audioDevice, "-ar", "16000", "-ac", "1", audioFile
     })
     recordingTask:start()
 end
@@ -138,10 +180,16 @@ local function stopRecordingAndTranscribe()
                         local text = f:read("*all"):gsub("^%s+", ""):gsub("%s+$", ""):gsub("\n", " ")
                         f:close()
                         if text ~= "" then
+                            local previousClipboard = obj.restoreClipboard and hs.pasteboard.getContents() or nil
                             hs.pasteboard.setContents(text)
                             hideUI(true)
                             hs.timer.doAfter(0.5, function()
                                 hs.eventtap.keyStroke({"cmd"}, "v")
+                                if previousClipboard then
+                                    hs.timer.doAfter(0.4, function()
+                                        hs.pasteboard.setContents(previousClipboard)
+                                    end)
+                                end
                             end)
                         else
                             showUI("error", "No speech")
@@ -158,7 +206,19 @@ local function stopRecordingAndTranscribe()
                 os.remove(audioFile)
                 os.execute("rm -rf /tmp/whispr_out")
             end,
-            {audioFile, "--model", obj.whisperModel, "--output-dir", "/tmp/whispr_out", "--language", obj.language}
+            (function()
+                local args = {audioFile, "--model", obj.whisperModel, "--output-dir", "/tmp/whispr_out",
+                              "--condition-on-previous-text", obj.conditionOnPreviousText and "True" or "False"}
+                if obj.language and obj.language ~= "auto" then
+                    table.insert(args, "--language")
+                    table.insert(args, obj.language)
+                end
+                if obj.initialPrompt then
+                    table.insert(args, "--initial-prompt")
+                    table.insert(args, obj.initialPrompt)
+                end
+                return args
+            end)()
         ):start()
     end)
 end
@@ -241,17 +301,25 @@ end
 --- Returns:
 ---  * The WhisprByTheo object
 function obj:start()
-    -- Check dependencies
-    local whisperCheck = io.popen("which mlx_whisper 2>/dev/null || echo ''"):read("*a"):gsub("%s+", "")
-    if whisperCheck == "" then
-        hs.alert.show("⚠️ mlx_whisper not found. Run install script first.", 5)
+    -- Check dependencies at the paths actually used later; `which` via io.popen
+    -- runs with the GUI launchd PATH, which lacks ~/.local/bin and /opt/homebrew/bin
+    if not hs.fs.attributes(self.whisperPath) then
+        hs.alert.show("⚠️ mlx_whisper not found at " .. self.whisperPath .. ". Run install script first.", 5)
         return self
     end
 
-    local ffmpegCheck = io.popen("which ffmpeg 2>/dev/null || echo ''"):read("*a"):gsub("%s+", "")
-    if ffmpegCheck == "" then
-        hs.alert.show("⚠️ ffmpeg not found. Run: brew install ffmpeg", 5)
+    if not hs.fs.attributes(self.ffmpegPath) then
+        hs.alert.show("⚠️ ffmpeg not found at " .. self.ffmpegPath .. ". Run: brew install ffmpeg, or set ffmpegPath.", 5)
         return self
+    end
+
+    -- Pick the recording device up front and track plug/unplug events
+    if self.audioDevicePreference then
+        resolveAudioDevice()
+        hs.audiodevice.watcher.setCallback(function(event)
+            if event == "dev#" then resolveAudioDevice() end
+        end)
+        hs.audiodevice.watcher.start()
     end
 
     -- Try to load saved config
@@ -279,6 +347,9 @@ end
 --- Returns:
 ---  * The WhisprByTheo object
 function obj:stop()
+    if self.audioDevicePreference and hs.audiodevice.watcher.isRunning() then
+        hs.audiodevice.watcher.stop()
+    end
     if keyDownTap then keyDownTap:stop(); keyDownTap = nil end
     if keyUpTap then keyUpTap:stop(); keyUpTap = nil end
     if voiceUI then voiceUI:delete(); voiceUI = nil end
